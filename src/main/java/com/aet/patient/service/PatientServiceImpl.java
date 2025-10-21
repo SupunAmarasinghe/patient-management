@@ -5,6 +5,7 @@ import com.aet.patient.dto.PatientDto;
 import com.aet.patient.model.Address;
 import com.aet.patient.model.Patient;
 import com.aet.patient.repository.PatientRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Objects;
 
+@Slf4j
 @Service
 public class PatientServiceImpl implements PatientService{
 
@@ -25,9 +26,13 @@ public class PatientServiceImpl implements PatientService{
   public PatientDto createPatient(PatientDto dto) {
     //Check if Patient already exist in the system
     repository.findByEmail(dto.getEmail())
-        .ifPresent(existing -> { throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-            "Patient already available in the system");
-        });
+        .ifPresent(existing ->
+          {
+            log.error("A patient with given email is already available in the system.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "A patient with given email is already available in the system.!");
+          });
+
     Patient patient = repository.save(mapToPatientEntity(dto));
     return mapToPatientDto(patient);
   }
@@ -41,7 +46,10 @@ public class PatientServiceImpl implements PatientService{
   @Override
   public PatientDto getPatientById(Long id) {
     Patient patient = repository.findById(id)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient Not Found with id: " + id));
+        .orElseThrow(() -> {
+          log.error("Patient with ID {} Not Found.", id);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient with ID:" + id + " Not Found.!");
+        });
     return mapToPatientDto(patient);
   }
 
@@ -59,7 +67,10 @@ public class PatientServiceImpl implements PatientService{
           return existing;
         })
         .map(repository::save)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient Not Found.!"));
+        .orElseThrow(() -> {
+          log.error("Patient with ID {} Not Found.", id);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient with ID:" + id + " Not Found.!");
+        });
 
     return mapToPatientDto(patient);
   }
